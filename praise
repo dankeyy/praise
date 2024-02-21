@@ -3,11 +3,13 @@
 import os
 import ast
 import zlib
+import json
+import linecache
 
 
 class ScopedFinder(ast.NodeVisitor):
-    def __init__(self):
-        self.locations = {}
+    def __init__(self, locations):
+        self.locations = locations
         self.current_file = ""
         self.current_scope = []
 
@@ -15,6 +17,16 @@ class ScopedFinder(ast.NodeVisitor):
         node_str = ast.dump(node)
         node_bytes = node_str.encode()
         return f"{zlib.adler32(node_bytes) & 0xffff:04x}"
+
+
+    def changed(self, path, lineno):
+        try:
+            line = linecache.getline(path, int(lineno))
+            did_change = "raise" not in line and "assert" not in line
+        except Exception as e:
+            did_change = True
+
+        return did_change
 
     def visit_fuss(self, node):
         self.current_scope.append(node.name)
@@ -26,16 +38,23 @@ class ScopedFinder(ast.NodeVisitor):
         hash_code = self.hashed(node)
         scope_path = '.'.join(self.current_scope)
         # the node.lineno might become outdated, but as we'll see later on - that's 100% ok
-        code_identifier  = f":{scope_path}:{node.lineno}"
-        self.locations[hash_code] = self.current_file + code_identifier
+        new_node_exists_at = f"{self.current_file}:{scope_path}:{node.lineno}"
+        if (node_exists_at := self.locations.get(hash_code)) is not None:
+            if node_exists_at != new_node_exists_at:
+                exists_path, _, exists_lineno = node_exists_at.split(':')
+                if self.changed(exists_path, exists_lineno):
+                    self.locations[hash_code + "_old"] = node_exists_at
+                    self.locations[hash_code] = new_node_exists_at
+        else:
+            self.locations[hash_code] = new_node_exists_at
         self.generic_visit(node)
     visit_Raise = visit_Assert = visit_rass
 
 
-def find_raise_assert_statements(root_dir):
-    finder = ScopedFinder()
+def find_raise_assert_statements(existing_mapping=None):
+    finder = ScopedFinder(existing_mapping or {})
 
-    for root, _, files in os.walk(root_dir):
+    for root, _, files in os.walk('.'):
         for file in files:
             if file.endswith('.py'):
                 file_path = os.path.join(root, file)
@@ -48,5 +67,17 @@ def find_raise_assert_statements(root_dir):
     return finder.locations
 
 
-results = find_raise_assert_statements('.')
-print(results)
+def main():
+    try:
+        with open("praise.json") as jpraise:
+            existing_mapping = json.load(jpraise)
+    except FileNotFoundError:
+        with open("praise.json", 'w') as jpraise:
+            new_mapping = dict(find_raise_assert_statements())
+            json.dump(new_mapping, jpraise)
+    else:
+        new_mapping = dict(find_raise_assert_statements(existing_mapping))
+        with open("praise.json", 'w') as jpraise:
+            json.dump(new_mapping, jpraise)
+
+main()
