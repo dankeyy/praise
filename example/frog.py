@@ -4,4 +4,4 @@
 
 
 
-raise Exception("123")
+raise BaseException("456")

@@ -2,9 +2,12 @@
 
 import os
 import ast
+import sys
 import zlib
 import json
+import pprint
 import linecache
+import collections
 
 
 class ScopedFinder(ast.NodeVisitor):
@@ -67,17 +70,87 @@ def find_raise_assert_statements(existing_mapping=None):
     return finder.locations
 
 
-def main():
+def find_and_write_failure_points(existing_mapping=None):
+    if existing_mapping is None:
+        with open("praise.json", 'w') as jpraise:
+            new_mapping = find_raise_assert_statements()
+            json.dump(new_mapping, jpraise)
+    else:
+        new_mapping = find_raise_assert_statements(existing_mapping)
+        with open("praise.json", 'w') as jpraise:
+            json.dump(new_mapping, jpraise)
+
+    return len(new_mapping)
+
+
+def inverse(mapping, key=None):
+    new_mapping = collections.defaultdict(list)
+    for k, v in mapping.items():
+        filepath, scope, lineno = v.split(':')
+        if key is None or key == "file+scope+line":
+            new_mapping[v].append(k)
+        elif key == "file":
+            new_mapping[filepath].append(k)
+        elif key == "scope":
+            new_mapping[scope].append(k)
+        elif key == "file+scope":
+            new_mapping[filepath +':'+ scope].append(k)
+        elif key == "file+line":
+            new_mapping[filepath +':'+ lineno].append(k)
+
+    return dict(new_mapping)
+
+
+def group(by=None, mapping=None):
+    return inverse(mapping, by)
+
+
+def history(mapping, query):
+    return {
+        k:v for k,v in mapping.items()
+        if query in v
+    }
+
+def entrypoint():
     try:
         with open("praise.json") as jpraise:
             existing_mapping = json.load(jpraise)
     except FileNotFoundError:
-        with open("praise.json", 'w') as jpraise:
-            new_mapping = dict(find_raise_assert_statements())
-            json.dump(new_mapping, jpraise)
-    else:
-        new_mapping = dict(find_raise_assert_statements(existing_mapping))
-        with open("praise.json", 'w') as jpraise:
-            json.dump(new_mapping, jpraise)
+        existing_mapping = None
 
-main()
+    argc = len(sys.argv)
+    if argc == 1:
+        count = find_and_write_failure_points(existing_mapping)
+        print(f"wrote {count} entries to praise.json")
+        return
+
+    # tell me to use argparse one more time & i will punch u in the face
+    flag = sys.argv[1]
+    if not flag.startswith("--"):
+        print("praise can only work from the cwd. ")
+        print(
+            "further available flags are:",
+            "--inverse to get the inverse of the existing json, values as keys",
+            '--groupby <OPTIONAL["file" | "scope" | "file+scope" | "file+line"]> for grouping keys by values. without subarguments it is equivalent to --inverse',
+            "--history <OPTIONAL[some/filepath | some.scope | some/filepath:some.scope | some/filepath:someline]>"
+            "--help to get this help",
+            sep='\n'
+        )
+
+    elif flag == "--inverse":
+        mapping = inverse(existing_mapping)
+        pprint.pprint(mapping)
+
+    elif flag == "--groupby":
+        subflag = sys.argv[2] if argc == 3 else None
+        mapping = group(by=subflag, mapping=existing_mapping)
+        pprint.pprint(mapping)
+
+    elif flag == "--history":
+        subflag = sys.argv[2]
+        matches = history(mapping=existing_mapping, query=subflag)
+        pprint.pprint(matches)
+
+
+if __name__ == '__main__':
+    entrypoint()
