@@ -1,4 +1,4 @@
-"""example of how to extract a user-displayable hash from a raise-failable-entrypoint"""
+"""extract a user-displayable hash from a raise-failable-entrypoint"""
 
 import os
 import sys
@@ -28,7 +28,7 @@ def _codepoint_from_exception() -> typing.Optional[tuple]:
 
 
 def hash_from_exception() -> str:
-    """to be used as a library function to get the codepoint from an exception"""
+    """to be used as a library function to get the hash from an exception"""
     codepoint = _codepoint_from_exception()
     try:
         with open("praise.json") as jpraise:
