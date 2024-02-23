@@ -16,3 +16,30 @@ the reason this triplet+crc are pretty cool is that given a change in any one of
 
 if we validate and document these changes we can get an error graph that is not only currently true, but is true history wide.\
 then, when a user reports a 4 hex digit error code, we can simply look it up on our graph and if it isn't marked `<hash>_old` (just `<hash>`) then we can even goto definition on the result.
+
+## usage
+```sh
+$ ./praise
+wrote 4 entries to praise.json
+```
+```sh
+./praise --print
+{'207b': './example/frog.py::7',
+ '207b_old': './example/frog.py::2',
+ '21ff': './example/frog.py::7',
+ '2d1a': './example/kapibara.py:f.g.A:7'}
+````
+```sh
+$ ./praise --groupby file+scope
+{'./example/frog.py:': ['207b', '207b_old', '21ff'],
+ './example/kapibara.py:f.g.A': ['2d1a']}
+```
+```sh
+$ ./praise --help
+--lookup to get a value of a given hash from the praise mapping
+--inverse to get the inverse of the existing json, values as keys
+--groupby <OPTIONAL["file" | "scope" | "file+scope" | "file+line"]> group keys by values. without a subargument it is equivalent to --inverse
+--history <OPTIONAL[some/file/path | some.scope | some/file/path:some.scope | some/file/path:someline]>
+--print to pretty print the mapping
+--help to get this help
+```
