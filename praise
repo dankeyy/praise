@@ -111,6 +111,16 @@ def history(mapping, query):
         if query in v
     }
 
+
+def lookup(mapping, entry):
+    matches = {}
+    if mapped := mapping.get(entry):
+        matches[entry] = mapped
+    if mapped := mapping.get(entry + "_old"):
+        matches[entry + "_old"] = mapped
+    return matches
+
+
 def entrypoint():
     try:
         with open("praise.json") as jpraise:
@@ -130,12 +140,22 @@ def entrypoint():
         print("praise can only work from the cwd. ")
         print(
             "further available flags are:",
+            "--lookup to get a value of a given hash from the praise mapping",
             "--inverse to get the inverse of the existing json, values as keys",
             '--groupby <OPTIONAL["file" | "scope" | "file+scope" | "file+line"]> for grouping keys by values. without subarguments it is equivalent to --inverse',
             "--history <OPTIONAL[some/filepath | some.scope | some/filepath:some.scope | some/filepath:someline]>"
+            "--print to pretty print the mapping",
             "--help to get this help",
             sep='\n'
         )
+
+    elif flag == "--print":
+        pprint.pprint(existing_mapping)
+
+    elif flag == "--lookup":
+        subflag = sys.argv[2]
+        mapping = lookup(existing_mapping, entry=subflag)
+        pprint.pprint(mapping)
 
     elif flag == "--inverse":
         mapping = inverse(existing_mapping)
