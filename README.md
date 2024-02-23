@@ -39,7 +39,7 @@ $ ./praise --help
 --lookup to get a value of a given hash from the praise mapping
 --inverse to get the inverse of the existing json, values as keys
 --groupby <OPTIONAL["file" | "scope" | "file+scope" | "file+line"]> group keys by values. without a subargument it is equivalent to --inverse
---history <OPTIONAL[some/file/path | some.scope | some/file/path:some.scope | some/file/path:someline]>
+--history [some/file/path | some.scope | some/file/path:some.scope | some/file/path:someline] get hashes whose value matches the given argument
 --print to pretty print the mapping
 --help to get this help
 ```
