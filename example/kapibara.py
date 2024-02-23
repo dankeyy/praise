@@ -7,4 +7,5 @@ def f():
                 raise Exception("get rekt") from None
         g()
 
-f()
+if __name__ == '__main__':
+    f()

@@ -23,7 +23,7 @@ $ ./praise
 wrote 4 entries to praise.json
 ```
 ```sh
-./praise --print
+$ ./praise --print
 {'207b': './example/frog.py::7',
  '207b_old': './example/frog.py::2',
  '21ff': './example/frog.py::7',

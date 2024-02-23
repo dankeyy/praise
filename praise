@@ -137,11 +137,12 @@ def entrypoint():
     # tell me to use argparse one more time & i will punch u in the face
     flag = sys.argv[1]
     if not flag.startswith("--"):
-        print("praise can only work from the cwd. further available flags are: ")
+        print("praise can only work from the cwd. available options are: ")
         flag = "--help"
 
     if flag == "--help":
         print(
+            "no flags to run praise on the cwd and create a praise.json mapping from the file tree"
             "--lookup to get a value of a given hash from the praise mapping",
             "--inverse to get the inverse of the existing json, values as keys",
             '--groupby <OPTIONAL["file" | "scope" | "file+scope" | "file+line"]> group keys by values. without a subargument it is equivalent to --inverse',
